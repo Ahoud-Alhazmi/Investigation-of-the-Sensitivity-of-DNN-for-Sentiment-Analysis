@@ -13,7 +13,7 @@ Download datasets from
 
 Setup
 --------------------------------------------------------
-You need Python 3, and all system dependencies possibly required by ( Keras , NLTK , Pandas , Seaborn , Numpy and Matplotlib)
+You need Python 3, and all system dependencies possibly required by (Keras , NLTK , Pandas , Seaborn , Numpy , IPython.display and Matplotlib)
 
 
 Strategies
