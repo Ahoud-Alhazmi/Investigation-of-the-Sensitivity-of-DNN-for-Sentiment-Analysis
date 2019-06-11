@@ -28,22 +28,16 @@ import datetime
 #1.  Load the model
 from keras.models import load_model
 #  the first Model is CNN-LSTM
-model = load_model('CNNLSTMYelpMultiV1.h5')
+model = load_model('CNNLSTMYelpFull.h5')
 
 
 # 2. Downlaod data 
-yelp = pd.read_csv('C:\\Users\\45058393\\Downloads\\yelp_reviewBig\\yelp_review.csv')
+yelp = pd.read_csv('yelp_review.csv')
 
 reviewsTest=yelp[600000:650000]  
-#----------------- This for Yelp Review Polarity
-#reviewsTest=reviewsTest[reviewsTest.stars!=3]
-#reviewsTest["labels"]= reviewsTest["stars"].apply(lambda x: 1 if x > 3  else 0)
-#reviewsTest=reviewsTest.drop("stars",axis=1)
 textsTest = reviewsTest["text"].values
 labelsTest = reviewsTest["stars"].values
 print(textsTest.shape)
-# 0 negative
-# 1 positive 
 print(labelsTest.shape)
 
 reviews=yelp[:500000]    
@@ -314,7 +308,7 @@ wordtocount = Counter(highAttOneWords)
 print ( "There are the MOST 100 words for All sampel for one atrributions")
 HigFrequencey  = wordtocount.most_common()
 print(HigFrequencey[:10])
-writetofile2(HigFrequencey,"High MOST Fre for one atrributions", 'C:\\Users\\45058393\\Desktop\\EMNLP2\\EMNLP3\\HigScoreLSTM.txt')
+writetofile2(HigFrequencey,"High MOST Fre for one atrributions", 'HigScoreLSTM.txt')
 print ( "---------------------------------")
 
 
@@ -324,7 +318,7 @@ wordtocount2 = Counter(LowAttOneWords)
 print ( "There are the MOST 100 words for All sampel for one atrributions")
 LowFrequencey  = wordtocount2.most_common()
 print(LowFrequencey[:10])
-writetofile2(LowFrequencey,"Low MOST Fre for one atrributions", 'C:\\Users\\45058393\\Desktop\\EMNLP2\\EMNLP3\\LowScoreLSTM.txt')
+writetofile2(LowFrequencey,"Low MOST Fre for one atrributions", 'LowScoreLSTM.txt')
 print ( "---------------------------------")
 
 #----------------------------------------------------------------------------------------
