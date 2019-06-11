@@ -14,12 +14,12 @@ Download datasets from
 Setup
 --------------------------------------------------------
 You need Python 3, and all system dependencies possibly required by
-    Keras
-    NLTK
-    Pandas
-    Seaborn
-    Numpy
-    Matplotlib
+    1. Keras
+    2. NLTK
+    3. Pandas
+    4. Seaborn
+    5. Numpy
+    6. Matplotlib
 
 
 Strategies
