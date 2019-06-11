@@ -105,11 +105,8 @@ labelsTest = reviewsTest["stars"].values
 sequencesTest = tokenizer.texts_to_sequences(textsTest)
 dataTest = pad_sequences(sequencesTest, maxlen=SEQUENCE_LENGTH)
 labelsTest = to_categorical(labelsTest)
-
-
-
 result2 = CNNLSTMModel.evaluate(dataTest,labelsTest,verbose =0)
 print(" Accuracy%%" % (result2[1]*100) +" loss function "+ result2[0])
 predication12 = modelLSTMB.predict(dataTest)
-RA2 = predication1.argmax(axis = -1)
+RA2 = predication12.argmax(axis = -1)
 
