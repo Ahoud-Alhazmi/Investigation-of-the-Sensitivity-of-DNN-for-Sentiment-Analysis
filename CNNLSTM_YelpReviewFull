@@ -1,0 +1,115 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+import os
+from nltk.corpus import stopwords
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras import utils as np_utils
+from keras.utils.np_utils import to_categorical
+from keras.layers import Embedding
+from keras.layers import Bidirectional, GlobalMaxPool1D,Conv1D
+from keras.layers import Dense, Input, LSTM, Embedding, Dropout, Activation
+from keras.layers import Bidirectional, GlobalMaxPool1D,Conv1D
+from keras.layers import Dense, Input, LSTM, Embedding, Dropout, Activation
+
+from keras.models import Model
+
+
+yelp = pd.read_csv('yelp_review.csv')
+
+reviews=yelp[:500000]   
+
+texts = reviews["text"].values
+labels = reviews["stars"].values
+
+NUM_WORDS=1000 
+SEQUENCE_LENGTH=100 
+tokenizer = Tokenizer(num_words=NUM_WORDS)
+tokenizer.fit_on_texts(texts)
+sequences = tokenizer.texts_to_sequences(texts)
+word_index = tokenizer.word_index
+print('Found %s unique tokens.' % len(word_index))
+data = pad_sequences(sequences, maxlen=SEQUENCE_LENGTH)
+
+labels = to_categorical(labels)
+
+VALIDATION_SPLIT=0.2
+
+indices = np.arange(data.shape[0])
+np.random.shuffle(indices)
+data = data[indices]
+labels = labels[indices]
+nb_validation_samples = int(VALIDATION_SPLIT * data.shape[0])
+
+x_train = data[:-nb_validation_samples]
+y_train = labels[:-nb_validation_samples]
+x_val = data[-nb_validation_samples:]
+y_val = labels[-nb_validation_samples:]
+GLOVE_DIR='glove.6B'
+
+embeddings_index = {}
+f = open(os.path.join(GLOVE_DIR, 'glove.6B.50d.txt'),encoding="utf8")
+for line in f:
+    values = line.split()
+    word = values[0]
+    coefs = np.asarray(values[1:], dtype='float32')
+    embeddings_index[word] = coefs
+f.close()
+
+EMBEDDING_DIM = 50 # how big is each word vector
+
+embedding_matrix = np.zeros((len(word_index) + 1, EMBEDDING_DIM))
+for word, i in word_index.items():
+    embedding_vector = embeddings_index.get(word)
+    if embedding_vector is not None:
+        embedding_matrix[i] = embedding_vector
+		
+
+
+embedding_layer = Embedding(len(word_index) + 1,
+                            EMBEDDING_DIM,
+                            weights=[embedding_matrix],
+                            input_length=SEQUENCE_LENGTH,
+                            trainable=False)
+							
+							
+							
+
+
+#------------------------------------------------------------------------ CNNLSTM Model---------------------------------
+
+inp = Input(shape=(SEQUENCE_LENGTH,  ))
+y = embedded_sequences = embedding_layer(inp)
+y = Dropout(0.1)(y)
+y = Conv1D(64, 5, activation='relu')(y)
+y = LSTM(100)(y)
+y = Dense(50, activation="relu")(y)
+y = Dropout(0.1)(y)
+y = Dense(6, activation="softmax")(y)
+
+CNNLSTMModel = Model(inputs=inp, outputs=y)
+CNNLSTMModel.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+CNNLSTMModel.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=40 , batch_size=128)
+CNNLSTMModel.save('CNNLSTMFull.h5)
+
+
+#---------------- Test Data----------------- 
+reviewsTest=yelp[600000:650000]    
+print(reviewsTest.head())
+print(reviewsTest.shape)
+textsTest = reviewsTest["text"].values
+labelsTest = reviewsTest["stars"].values
+sequencesTest = tokenizer.texts_to_sequences(textsTest)
+dataTest = pad_sequences(sequencesTest, maxlen=SEQUENCE_LENGTH)
+labelsTest = to_categorical(labelsTest)
+
+
+
+result2 = CNNLSTMModel.evaluate(dataTest,labelsTest,verbose =0)
+print(" Accuracy%%" % (result2[1]*100) +" loss function "+ result2[0])
+predication12 = modelLSTMB.predict(dataTest)
+RA2 = predication1.argmax(axis = -1)
+
