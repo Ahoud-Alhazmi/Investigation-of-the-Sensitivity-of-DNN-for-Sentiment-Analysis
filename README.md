@@ -7,7 +7,7 @@ Analyzing the Sensitivity of Deep Neural Network for Sentiment Analysis: A Scori
 Datasets
 --------------------------------------------------------
 Download datasets from
-1.	IMDB : http://ai.stanford.edu/ amaas/data/sentiment/
+1.	IMDB : http://ai.stanford.edu/amaas/data/sentiment/
 2.	Yelp-Reviews: https://www.yelp.com/dataset/challenge
 
 
