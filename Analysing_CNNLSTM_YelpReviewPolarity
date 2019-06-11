@@ -1,0 +1,1014 @@
+# This code for analyzing the model CNN-LSTM  for Yelp-Review Polarity
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import sent_tokenize, word_tokenize
+import time   
+from nltk.corpus import wordnet
+from nltk import SpaceTokenizer
+from random import randint
+import os
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+import random
+import matplotlib
+import matplotlib.pyplot as plt
+import keras.utils
+from keras import utils as np_utils
+from keras.utils import to_categorical
+from keras import models
+import datetime
+
+# Libary 
+#1.  Load the model
+from keras.models import load_model
+#  the first Model is CNN-LSTM
+model = load_model('CNNLSTMYelpBinary.h5')
+
+
+# 2. Downlaod data 
+yelp = pd.read_csv('yelp_review.csv')
+
+reviewsTest=yelp[400000:430000]  
+reviewsTest=reviewsTest[reviews.stars!=3]
+reviewsTest["labels"]= reviewsTest["stars"].apply(lambda x: 1 if x > 3  else 0)
+reviewsTest=reviews.drop("stars",axis=1)
+
+textsTest = reviewsTest["text"].values
+labelsTest = reviewsTest["labels"].values
+print(textsTest.shape)
+print(labelsTest.shape)
+
+reviews=yelp[:300000]    
+#----------------- This for Yelp Review Polarity
+reviews=reviews[reviews.stars!=3]
+reviews["labels"]= reviews["stars"].apply(lambda x: 1 if x > 3  else 0)
+reviews=reviews.drop("stars",axis=1)
+texts = reviews["text"].values
+labels = reviews["labels"].values
+NUM_WORDS=1000 
+MSEQUENCE_LENGTH=100 
+tokenizer = Tokenizer(num_words=NUM_WORDS)
+tokenizer.fit_on_texts(texts)
+
+                     
+seqTest = tokenizer.texts_to_sequences(textsTest)
+Test_data2 = pad_sequences(seqTest, maxlen=MSEQUENCE_LENGTH)
+Test_labelsData0 = np.asarray(labelsTest).astype('float32')
+#Test_labelsData0 = to_categorical(np.asarray((labelsTest)))
+
+scores = model.evaluate(Test_data2, Test_labelsData0 , verbose=0)
+print("Accuracy predi Clean: %.2f%%" % (scores[1]*100))
+print('Loss fuction predi Clean: % 6.4f' % scores[0])
+
+
+
+ListWords = []
+
+#----------------------------------
+def convertlistToWords (sample):
+    # for Head
+    words = sample.split()
+    LSitsample = []
+    j =0
+    while j <= len(words):
+        stest = " ".join(words[:j])
+        #print ("tokesn: ", stest)
+        LSitsample.append(stest)
+        j = j + 1
+        
+    return LSitsample
+
+#-----------------------------------
+def Head2 (listpredication ):
+    Attrbuition = []
+    k = 1
+    while k < len(listpredication):
+        num = listpredication[k] - listpredication[k-1]
+        Attrbuition.append(num)
+        k = k + 1
+    #print("Attrbuition ", len(Attrbuition))
+    #print(Attrbuition)
+    return Attrbuition
+
+#-------------------------
+
+def convertlistTowordsTails (sample):
+    words = sample.split()
+    LSitsample = []
+    j =0
+    while j <= len(words):
+        stest = " ".join(words[j:])
+        #print ("tokesn: ", stest)
+        LSitsample.append(stest)
+        j = j + 1
+        
+    return LSitsample
+
+#----------------------------
+
+def Tail (listpredication ):
+    Attrbuition = []
+    k = 1
+    while k < len(listpredication):
+        num = listpredication[k] - listpredication[k-1]
+        Attrbuition.append(num)
+        k = k + 1
+    #print("Attrbuition ", len(Attrbuition))
+    #print(Attrbuition)
+    return Attrbuition
+
+#-------------------------
+def combined(attHead , atttail):
+    Attrbuition = []
+    num = min(len(attHead), len(atttail))
+    l =0
+    while l < num:
+        re =attHead[l]-(30*atttail[l])
+        Attrbuition.append(re)
+        l = l +1
+    return Attrbuition
+        
+        
+#-------------------------
+from IPython.display import display, HTML
+
+import numpy
+
+# This method from https://github.com/ankurtaly/Integrated-Gradients
+def visualize_token_attrs(tokens, attrs):
+  """
+  Visualize attributions for given set of tokens.
+  Args:
+  - tokens: An array of tokens
+  - attrs: An array of attributions, of same size as 'tokens',
+    with attrs[i] being the attribution to tokens[i]
+  
+  Returns:
+  - visualization: An IPython.core.display.HTML object showing
+    tokens color-coded based on strength of their attribution.
+  """
+  def get_color(attr, tok):
+    
+    if numpy.isnan(attr):
+        attr = numpy.nan_to_num(attr) 
+        
+    if attr > 0:
+      r = int(128*attr) + 127
+      g = 128 - int(64*attr)
+      b = 128 - int(64*attr) 
+    else:
+      
+      r = 128 + int(64*attr)
+      g = 128 + int(64*attr) 
+      b = int(-128*attr) + 127
+    return r,g,b
+
+  # normalize attributions for visualization.
+  attribution = attrs
+  bound = max(abs(attrs.max()), abs(attrs.min()))
+  Top = []
+  testsort = []
+  attrs = attrs/bound
+  html_text = ""
+  for i, tok in enumerate(tokens):
+    r,g,b = get_color(attrs[i], tok)
+    html_text += " <span style='color:rgb(%d,%d,%d)'>%s</span>" % (r, g, b, tok)
+    testsort.append([tok,  attribution[i], bound * attribution[i]])
+  def secondvalue(val):
+        return val[1]
+    
+  testsort.sort(key = secondvalue , reverse = True)   
+                    
+    
+  return HTML(html_text) , testsort
+
+#-------------------------------
+def visualize_token_attrs2POT(tokens, attrs , Text):
+
+  def get_color(attr, tok):
+    
+    if numpy.isnan(attr):
+        attr = numpy.nan_to_num(attr) 
+        
+    if attr > 0:
+      r = int(128*attr) + 127
+      g = 128 - int(64*attr)
+      b = 128 - int(64*attr) 
+    else:
+      #print( attr)
+      #print( 64* attr)
+      
+      r = 128 + int(64*attr)
+      g = 128 + int(64*attr) 
+      b = int(-128*attr) + 127
+    return r,g,b
+
+  # normalize attributions for visualization.
+  attribution = attrs
+  bound = max(abs(attrs.max()), abs(attrs.min()))
+  Top = []
+  testsort = []
+  attrs = attrs/bound
+  html_text = ""
+  #print ("tokens ", tokens)
+  words = Text.split()
+  words2 = nltk.pos_tag(words)
+  #print(words2)
+  for i, tok in enumerate(tokens):
+    postTge = words2[i][1]
+    testsort.append([tok,  attribution[i], bound * attribution[i] , postTge])
+    
+  def secondvalue(val):
+        return np.any(val[1])
+    
+  #print ( testsort)
+    
+  testsort.sort(key = secondvalue , reverse = True)
+       
+  return testsort
+    
+def SmaplesTextPOT(TextsSample):
+    doubleTestsortPost = []
+    #mostFrequence = []
+    num = 0
+    for s1 in TextsSample:
+        print( num)
+        num = num + 1
+        LSitsample = convertlistTowords(s1)
+        Sample1Sequence = tokenizer.texts_to_sequences(LSitsample)
+        listAttribution = pad_sequences(Sample1Sequence, maxlen=MSEQUENCE_LENGTH)
+        listpredication =  model.predict(listAttribution) 
+        ComAtt = Head2(listpredication)
+        
+        #---------------------NB--------NB NB------------------------------------------------
+        #LSitsampleTail = convertlistTowordsTails(s1)
+        #Sample1SequenceTail = tokenizer.texts_to_sequences(LSitsampleTail)
+        #listAttributionTail = pad_sequences(Sample1SequenceTail, maxlen=MSEQUENCE_LENGTH)
+        #listpredicationtail =  model.predict(listAttributionTail) 
+        #AttrbuitionTail = Tail(listpredicationtail)
+        #ComAtt = combined(Attrbuition, AttrbuitionTail )
+        #----------------------------------------------------------------------------------
+        wordscom = s1.split()
+        tokensCom = np.asarray(wordscom)
+        #to_categorical(
+        ComA = np.asarray(ComAtt)
+        #---------------- Import fro printing the visulaizing
+        #pageCom, testsort = visualize_token_attrs (tokensCom,ComA )
+        # display(pageCom)
+        testsort = visualize_token_attrs2POT(tokensCom,ComA,s1 )
+        #----------------------------------
+        doubleTestsortPost.append(testsort)
+ 
+    return doubleTestsortPost
+
+doubleTestsortPost = SmaplesTextPOT(textsTest)
+print("---",doubleTestsortPost[0][0][3])
+
+#---------------------------------------------------------------------------------
+def writetofile2 ( listWrite, textStrat, path):
+    with open (path,'w', encoding='utf-8') as f :
+        f.write(textStrat)
+        f.write("\n")
+        for item in listWrite:
+            f.write(str(item))
+            f.write("\n")
+        f.write("-------------------------------------------------------------------")
+        
+
+
+def higFrequenceOnewords(doubleTestsortPost ) :
+    g = 0
+    highAttOneWords = []
+    PostHigh = []
+    while g < len(doubleTestsortPost):
+        highAttOneWords.append(str(doubleTestsortPost[g][0][0]))
+        PostHigh.append(doubleTestsortPost[g][0][3])
+        g = g + 1
+    return highAttOneWords , PostHigh
+
+
+
+def LowFrequenceOnewords(doubleTestsortPost) :
+    g = 0
+    LowAttOneWords = []
+    PostLoW = []
+    while g < len(doubleTestsortPost):
+        k = len(doubleTestsortPost[g])-1
+        LowAttOneWords.append(str(doubleTestsortPost[g][k][0]))
+        PostLoW.append(str(doubleTestsortPost[g][k][3]))
+        g = g + 1
+    return LowAttOneWords ,PostLoW 
+
+highAttOneWords , PostHigh = higFrequenceOnewords(doubleTestsortPost)
+from collections import Counter
+wordtocount = Counter(highAttOneWords)
+print ( "There are the MOST 100 words for All sampel for one atrributions")
+HigFrequencey  = wordtocount.most_common()
+print(HigFrequencey[:10])
+writetofile2(HigFrequencey,"High MOST Fre for one atrributions", 'HigScoreLSTM.txt')
+print ( "---------------------------------")
+
+
+
+LowAttOneWords,PostLoW = LowFrequenceOnewords(doubleTestsortPost)
+wordtocount2 = Counter(LowAttOneWords)
+print ( "There are the MOST 100 words for All sampel for one atrributions")
+LowFrequencey  = wordtocount2.most_common()
+print(LowFrequencey[:10])
+writetofile2(LowFrequencey,"Low MOST Fre for one atrributions", 'LowScoreLSTM.txt')
+print ( "---------------------------------")
+
+#----------------------------------------------------------------------------------------
+
+wordtocountPostHigh = Counter(PostHigh)
+print ( "There are the MOST 100 words for All sampel for one atrributions")
+HighFrequenceyPOST  = wordtocountPostHigh.most_common()
+print(HighFrequenceyPOST)
+
+
+print("---------------------------------------------")
+
+wordtocountPostLow = Counter(PostLoW)
+print ( "There are the MOST 100 words for All sampel for one atrributions")
+LowFrequenceyPOST  = wordtocountPostLow.most_common()
+print(LowFrequenceyPOST)
+
+
+
+
+def Filtering (freqHighType , Total):
+    labels = ['Adjective','Verb','Adverb','Noun','Pronoun','Other']
+    sizes = []
+    numAdj =0
+    numVerb= 0
+    numAdver =0
+    numNoun=0
+    NumPronoun =0
+    numOther = 0
+    for a in freqHighType :
+        if a[0] == 'JJ' or a[0] =='JJS' or a[0]== 'JJR':
+            numAdj = numAdj + a[1]
+        elif a[0] == 'VB' or a[0] =='VBD' or a[0]== 'VBG' or a[0]== 'VBN' or a[0]== 'VBP' or  a[0]== 'VBZ' or a[0]== 'MD':
+            numVerb = numVerb + a[1]
+        elif a[0] == 'RB' or a[0] == 'RBR' or a[0] == 'RBS':
+            numAdver = numAdver + a[1]
+        elif a[0] == 'NN' or a[0] == 'NNS' or a[0] == 'NNP' or a[0] == 'NNPS' :
+            numNoun = numNoun + a[1]
+            
+        elif a[0] == 'PRP' or a[0] == 'PRP$':
+            NumPronoun = NumPronoun + a[1]
+        else :
+             numOther = numOther + a[1]
+                
+    sizes.append(numAdj/Total)
+    sizes.append(numVerb/Total)
+    sizes.append(numAdver/Total)
+    sizes.append(numNoun/Total)
+    sizes.append(NumPronoun/Total)
+    sizes.append(numOther/ Total)
+    print(numAdj/Total)
+    print(numVerb/ Total)
+    print(numAdver/ Total)
+    print(numNoun/ Total)
+    print(NumPronoun/ Total)
+    print(numOther/ Total)
+                
+    return labels , sizes
+
+
+def piChart (labels,sizes , Title):
+    colors = ['chocolate' ,'hotpink','lightskyblue', 'darkolivegreen' , 'maroon', 'darkmagenta']
+    patches, texts , autotexts= plt.pie(sizes, colors=colors ,autopct = '%1.1f%%', shadow=True, startangle=90)
+    plt.legend(patches, labels, loc="best")
+    plt.axis('equal')
+    plt.tight_layout()
+    plt.show()
+    
+   
+
+labelsHig , sizesHig = Filtering(HighFrequenceyPOST, len(textsTest))
+piChart(labelsHig,sizesHig , "POS Tagging of High Score words"  )
+
+print("------------------------------------------")
+labelsLow , sizesLow = Filtering(LowFrequenceyPOST, len(textsTest))
+piChart(labelsLow,sizesLow , "POS Tagging of Low Score words" )
+
+
+#----------------------------------------------------------------------------
+
+
+
+#------------ change from the 10 important words from hig to low
+def attackTenWordsAdjectiveHighV1SKIP(doubleTestsortPost ,tokenizer, textsTest, LAbelClean, num ):
+    TTYpe = []
+    if num == 1 :
+        TTYpe = [  'JJ' ,'JJS','JJR']
+    elif num == 2 :
+        TTYpe = [ 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD']
+    elif num == 3 :
+        TTYpe = ['RB' ,'RBR' , 'RBS']
+    elif num == 4:
+        TTYpe =  [ 'NN' ,'NNS' , 'NNP', 'NNPS']
+    elif num == 5:
+        TTYpe =  [ 'PRP' ,'PRP$']
+    elif num == 6 :
+        TTYpe =  [ 'PRP' ,'PRP$', 'JJ' ,'JJS','JJR', 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD','RB' ,'RBR' , 'RBS', 'NN' ,'NNS' , 'NNP', 'NNPS' , 'PRP' ,'PRP$']
+    
+    
+    Number = []
+    acc = []
+    #-------------- Clean-----------
+    TextCLean = textsTest.copy()
+    Seguences= tokenizer.texts_to_sequences(TextCLean)
+    Tesssst0 = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+    result = model.evaluate(Tesssst0, LAbelClean , verbose=0)
+    Number.append(0)
+    acc.append(result[1])
+    print(result[1])
+    i =0
+    temp =0
+    while i < 10 :
+        Number.append(i+1)
+        print ( Number[i+1])
+        for g , review in enumerate(TextCLean):
+            if len(doubleTestsortPost[g]) > i :
+                OldWord = str(doubleTestsortPost[g][i][0])
+                Type = doubleTestsortPost[g][i][3]
+                if num != 6:
+                    if  Type in TTYpe: 
+                        NewWord= shuffle33(OldWord)
+                        TextCLean[g] = TextCLean[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                elif num == 6 :
+                    if  Type  not in TTYpe:
+                        NewWord= shuffle33(OldWord)
+                        TextCLean[g] = TextCLean[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                
+        Seguences= tokenizer.texts_to_sequences(TextCLean)
+        Tesssst = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+        result = model.evaluate(Tesssst, LAbelClean , verbose=0)
+        acc.append(result[1])
+        print ('%.2f'%(result[1]*100))
+        i = i+1
+        print(" how many changes " , num , " == " ,temp)
+        temp =0
+    return Number , acc
+
+ #------------------------------------------------------------------------------------------------------------------------------------
+#================================================== Misspelling Attack:  ===============================================================
+#------------------------------------------------------------------------------------------------------------------------------------
+
+def shuffle33( TryWord):
+    wordlen = len(TryWord)
+    TryWord = list(TryWord)
+    for i in range(0,wordlen -1 ):
+        pos = randint(i +1 , wordlen-1)
+        TryWord[i],TryWord[pos] = TryWord[pos],TryWord[i]
+    TryWord = "".join(TryWord)
+    return TryWord
+
+
+def attackTenWordsAdjectiveHighV1(doubleTestsortPost ,tokenizer, textsTest, LAbelClean, num ):
+    TTYpe = []
+    if num == 1 :
+        TTYpe = [  'JJ' ,'JJS','JJR']
+    elif num == 2 :
+        TTYpe = [ 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD']
+    elif num == 3 :
+        TTYpe = ['RB' ,'RBR' , 'RBS']
+    elif num == 4:
+        TTYpe =  [ 'NN' ,'NNS' , 'NNP', 'NNPS']
+    elif num == 5:
+        TTYpe =  [ 'PRP' ,'PRP$']
+    elif num == 6 :
+        TTYpe =  [ 'PRP' ,'PRP$', 'JJ' ,'JJS','JJR', 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD','RB' ,'RBR' , 'RBS', 'NN' ,'NNS' , 'NNP', 'NNPS' , 'PRP' ,'PRP$']
+    
+    
+    Number = []
+    acc = []
+    #-------------- Clean-----------
+    TextCLean = textsTest.copy()
+    Seguences= tokenizer.texts_to_sequences(TextCLean)
+    Tesssst0 = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+    result = model.evaluate(Tesssst0, LAbelClean , verbose=0)
+    Number.append(0)
+    acc.append(result[1])
+    print(result[1])
+    i =0
+    temp =0
+    while i < 10 :
+        Number.append(i+1)
+        print ( Number[i+1])
+        for g , review in enumerate(TextCLean):
+            #words = review.split()
+            #words2 = nltk.pos_tag(words)
+            if len(doubleTestsortPost[g]) > i :
+                OldWord = str(doubleTestsortPost[g][i][0])
+                Type = doubleTestsortPost[g][i][3]
+                #kk = IsAdjective( OldWord, Type)
+                if num != 6:
+                    if  Type in TTYpe: 
+                        NewWord= shuffle33(OldWord)
+                        TextCLean[g] = TextCLean[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                elif num == 6 :
+                    if  Type  not in TTYpe:
+                        NewWord= shuffle33(OldWord)
+                        TextCLean[g] = TextCLean[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                
+        Seguences= tokenizer.texts_to_sequences(TextCLean)
+        Tesssst = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+        result = model.evaluate(Tesssst, LAbelClean , verbose=0)
+        acc.append(result[1])
+        print ('%.2f'%(result[1]*100))
+       # print(" How many Stop Words found; ",  temp )
+        i = i+1
+        print(" how many changes " , num , " == " ,temp)
+        temp =0
+    return Number , acc
+
+
+def LineChartTitleMulti(Labrlll0,Accuracy0,Labrlll1,Accuracy1, Labrlll2,Accuracy2,Labrlll3,Accuracy3,Labrlll4, Accuracy4, Labrlll5, Accuracy5,Title) :
+    
+    fig, ax = plt.subplots()
+    ax.plot(Labrlll0, Accuracy0 , color = 'olive')  # Adj
+    ax.plot(Labrlll1, Accuracy1 , linestyle='dashed' , color = 'chocolate') # Verb
+    ax.plot(Labrlll2, Accuracy2 ,   color = 'lightskyblue') # Adv
+    ax.plot(Labrlll3, Accuracy3 ,  color = 'mediumslateblue') # Noun
+    ax.plot(Labrlll4, Accuracy4,  color = 'slategray') #Pronoun
+    ax.plot(Labrlll5, Accuracy5,  color = 'orchid') # other
+    
+    ax.set(xlabel='num modified words', ylabel='acc',title=Title)
+    ax.legend(['Adjective','Verb','Adverb','Noun','Pronoun','Other'])
+    ax.grid()
+    plt.show()
+
+num =1
+Labrlll = []
+Accuracy = [] 
+while num <= 6 :
+    NumberAdjV1 , accAdjV1 = attackTenWordsAdjectiveHighV1(doubleTestsortPost ,tokenizer, textsTest, Test_labelsData0 , num )
+    prpoties = ""
+    if num == 1 :
+        prpoties = "Adjective"
+    elif num == 2 :
+        prpoties = "Verb"
+    elif num == 3 :
+        prpoties = "Adverb"
+    elif num == 4:
+        prpoties =  "Noun"
+    elif num == 5:
+        prpoties =  "Pronoun"
+    elif num == 6 :
+        prpoties =  "Other"
+    Labrlll.append(NumberAdjV1) 
+    Accuracy.append(accAdjV1)
+    num = num + 1
+    
+
+Title = "Shuffle Stratgey for POS words"
+LineChartTitleMulti(Labrlll[0],Accuracy[0],Labrlll[1],Accuracy[1], Labrlll[2],Accuracy[2],Labrlll[3],Accuracy[3],Labrlll[4],Accuracy[4], Labrlll[5],Accuracy[5],Title)
+     
+
+
+
+def attackTenWordsAdjectiveLowV1(doubleTestsortPost ,tokenizer, textsTest, LAbelClean , num ):
+    TTYpe = []
+    if num == 1 :
+        TTYpe = [  'JJ' ,'JJS','JJR']
+    elif num == 2 :
+        TTYpe = [ 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD']
+    elif num == 3 :
+        TTYpe = ['RB' ,'RBR' , 'RBS']
+    elif num == 4:
+        TTYpe =  [ 'NN' ,'NNS' , 'NNP', 'NNPS']
+    elif num == 5:
+        TTYpe =  [ 'PRP' ,'PRP$']
+    elif num == 6 :
+        TTYpe =  [ 'PRP' ,'PRP$', 'JJ' ,'JJS','JJR', 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD','RB' ,'RBR' , 'RBS', 'NN' ,'NNS' , 'NNP', 'NNPS' , 'PRP' ,'PRP$']
+    
+    Number = []
+    acc = []
+    #-------------- Clean-----------
+    TextCLean2 = textsTest.copy()
+    #print(TextCLean2)
+    Seguences= tokenizer.texts_to_sequences(TextCLean2)
+    Tesssst0 = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+    result = model.evaluate(Tesssst0, LAbelClean , verbose=0)
+    Number.append(0)
+    acc.append(result[1])
+    print(result[1])
+    i =0
+    temp = 0
+    while i < 10 :
+        Number.append(i+1)
+        print ( Number[i+1])
+        for g , review in enumerate(TextCLean2):
+            #if g == 0 :
+            words = review.split()
+            words2 = nltk.pos_tag(words)
+            k = len(doubleTestsortPost[g])-1-i
+            if len(doubleTestsortPost[g]) > 20 :  #k
+                OldWord = str(doubleTestsortPost[g][k][0])
+                Type = doubleTestsortPost[g][k][3]
+                if num != 6:
+                    if  Type in TTYpe: 
+                        NewWord= shuffle33(OldWord)
+                        TextCLean2[g] = TextCLean2[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                elif num == 6 :
+                    if  Type  not in TTYpe:
+                        NewWord= shuffle33(OldWord)
+                        TextCLean2[g] = TextCLean2[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                
+ 
+        Seguences= tokenizer.texts_to_sequences(TextCLean2)
+        Tesssst = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+        result = model.evaluate(Tesssst, LAbelClean , verbose=0)
+        acc.append(result[1])
+        print ('%.2f'%(result[1]*100))
+        i = i+1
+        print(" how many changes " , num , " == " ,temp)
+        temp =0
+
+    return Number , acc
+
+
+
+num =1
+Labrlll = []
+Accuracy = [] 
+while num <= 6 :
+    NumberAdjV1 , accAdjV1 = attackTenWordsAdjectiveLowV1(doubleTestsortPost ,tokenizer, textsTest, Test_labelsData0 , num )
+    prpoties = ""
+    if num == 1 :
+        prpoties = "Adjective"
+    elif num == 2 :
+        prpoties = "Verb"
+    elif num == 3 :
+        prpoties = "Adverb"
+    elif num == 4:
+        prpoties =  "Noun"
+    elif num == 5:
+        prpoties =  "Pronoun"
+    elif num == 6 :
+        prpoties =  "Other"
+    Labrlll.append(NumberAdjV1) 
+    Accuracy.append(accAdjV1)
+    num = num + 1
+    
+
+Title = "Shuffle Stratgey for POS words for Low Score words"
+LineChartTitleMulti(Labrlll[0],Accuracy[0],Labrlll[1],Accuracy[1], Labrlll[2],Accuracy[2],Labrlll[3],Accuracy[3],Labrlll[4],Accuracy[4], Labrlll[5],Accuracy[5],Title)
+     
+
+
+
+
+def LineChartTitleTwo(Number2,acc2,Number3, acc3 , Title):
+    fig, ax = plt.subplots()
+    ax.plot(Number2, acc2 , color = 'olive')
+    ax.plot(Number3, acc3 , linestyle='dashed' , color = 'chocolate')
+    ax.set(xlabel='num modified words', ylabel='acc',title=Title)
+    ax.legend(['High score words','Low score words'])
+    ax.grid()
+    plt.show()
+
+ #------------------------------------------------------------------------------------------------------------------------------------
+#================================================== Stop word deletion ===============================================================
+#------------------------------------------------------------------------------------------------------------------------------------
+
+nltk.download('stopwords')
+#------------ change from the 10 important words from hig to low
+def attackTenWordsDeleStoptHigh(doubleTestsortPost ,tokenizer, textsTest, LAbelClean ):
+    StopList = set(stopwords.words('english'))
+    Number = []
+    acc = []
+    temp =0
+    #-------------- Clean-----------
+    TextCLean = textsTest.copy()
+    Seguences= tokenizer.texts_to_sequences(TextCLean)
+    Tesssst0 = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+    result = model.evaluate(Tesssst0, LAbelClean , verbose=0)
+    Number.append(0)
+    acc.append(result[1])
+    print(result[1])
+    i =0
+    while i < 10 :
+        Number.append(i+1)
+        print ( Number[i+1])
+        for g , review in enumerate(TextCLean):
+            if len(doubleTestsortPost[g]) > i :
+                OldWord = str(doubleTestsortPost[g][i][0])
+                if OldWord.lower() in StopList:
+                    TextCLean[g] = TextCLean[g].replace(OldWord , '')
+                    temp = temp + 1
+        Seguences= tokenizer.texts_to_sequences(TextCLean)
+        Tesssst = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+        result = model.evaluate(Tesssst, LAbelClean , verbose=0)
+        acc.append(result[1])
+        print ('%.2f'%(result[1]*100))
+        print(" How many Stop Words found; ",  temp )
+        i = i+1
+        temp =0
+    return Number , acc
+
+
+
+
+
+#----------------------------------------------------------------------
+NumberDel2Stop , accDelStop = attackTenWordsDeleStoptHigh(doubleTestsortPost ,tokenizer, textsTest, Test_labelsData0 )
+
+
+
+#------------ change from the 10 unimpotant words from low 
+def attackTenWordsDeletStopLow(doubleTestsortPost ,tokenizer, textsTest, LAbelClean ):
+    StopList = set(stopwords.words('english'))
+    Number = []
+    acc = []
+    #-------------- Clean-----------
+    TextCLean2 = textsTest.copy()
+    #print(TextCLean2)
+    Seguences= tokenizer.texts_to_sequences(TextCLean2)
+    Tesssst0 = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+    result = model.evaluate(Tesssst0, LAbelClean , verbose=0)
+    Number.append(0)
+    acc.append(result[1])
+    print(result[1])
+    i =0
+    temp =0
+    while i < 10 :
+        Number.append(i+1)
+        print ( Number[i+1])
+        for g , review in enumerate(TextCLean2):
+            k = len(doubleTestsortPost[g])-1-i
+            if len(doubleTestsortPost[g]) > 20 :  #k
+                OldWord = str(doubleTestsortPost[g][k][0])
+                #NewWord= Synyomes(OldWord)
+                if OldWord.lower() in StopList:
+                    TextCLean2[g] = TextCLean2[g].replace(OldWord , '')
+                    temp = temp +1
+                
+        Seguences= tokenizer.texts_to_sequences(TextCLean2)
+        Tesssst = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+        result = model.evaluate(Tesssst, LAbelClean , verbose=0)
+        acc.append(result[1])
+        print ('%.2f'%(result[1]*100))
+        i = i+1
+        print(" How many Stop Words found; ",  temp )
+        temp =0
+    return Number , acc
+
+
+NumberDelStop3 , accDelstop33 = attackTenWordsDeletStopLow(doubleTestsortPost ,tokenizer, textsTest, Test_labelsData0 )
+LineChartTitleTwo(NumberDel2Stop,accDelStop,NumberDelStop3, accDelstop33,"Deletion stop words Stratgey one")
+
+
+def LineChartTitleMultiV12(Labrlll0,Accuracy0,Labrlll1,Accuracy1, Labrlll2,Accuracy2,Labrlll3,Accuracy3,Labrlll4, Accuracy4, Labrlll5, Accuracy5,Title) :
+    
+    fig, ax = plt.subplots()
+    ax.plot(Labrlll0, Accuracy0 , color = 'olive')  # Adj
+    ax.plot(Labrlll1, Accuracy1 , linestyle=(0,(3,1,1,1,1,1)) , color = 'chocolate') # Verb
+    ax.plot(Labrlll2, Accuracy2 , linestyle=(0,(3,1,1,1)),  color = 'navy') # Adv
+    ax.plot(Labrlll3, Accuracy3 , linestyle=(0,(1,1)), color = 'forestgreen') # Noun
+    ax.plot(Labrlll4, Accuracy4, linestyle=(0,(5,1)),  color = 'darkcyan') #Pronoun
+    ax.plot(Labrlll5, Accuracy5, linestyle=(0,(3,5,1,5,1,5)), color = 'indigo') # other
+    ax.set(xlabel='num modified words', ylabel='acc',title=Title)
+    ax.legend(['Adjective','Verb','Adverb','Noun','Pronoun','Other'])
+    ax.grid()
+    plt.show()
+    
+
+   
+
+Title = "Shuffle Stratgey for Low score words"
+LineChartTitleMultiV12(Labrlll[0],Accuracy[0],Labrlll[1],Accuracy[1], Labrlll[2],Accuracy[2],Labrlll[3],Accuracy[3],Labrlll[4],Accuracy[4], Labrlll[5],Accuracy[5],Title)
+ #------------------------------------------------------------------------------------------------------------------------------------
+#================================================== Grammatical Attack ===============================================================
+#------------------------------------------------------------------------------------------------------------------------------------
+
+
+from nltk.corpus import wordnet as wn
+
+def transform ( TragetWords):
+ 
+    forms = set() 
+    for happy_lemma in wn.lemmas(TragetWords): 
+        forms.add(happy_lemma.name())
+        for related_lemma in happy_lemma.derivationally_related_forms():
+            forms.add(related_lemma.name())
+    forms2 = list(forms)
+    #print ( "forms ", forms)
+    if TragetWords in forms2:
+        forms2.remove(TragetWords)
+    ResultWords = ""
+    if len(forms2) == 0  :
+        if num == 1:
+            ResultWords = TragetWords+"r"
+        elif  num == 2:
+            ResultWords = TragetWords+"ed"
+        else :
+            ResultWords = TragetWords+"ing"
+    else :
+        
+        #print (forms2)
+        ResultWords = forms2[len(forms2)-1]
+ 
+            
+    return ResultWords
+
+#------------ change from the 10 important words from hig to low
+def attackTenWordsAdjectiveHighV1Transformation (doubleTestsortPost ,tokenizer, textsTest, LAbelClean, num ):
+    TTYpe = []
+    if num == 1 :
+        TTYpe = [  'JJ' ,'JJS','JJR']
+    elif num == 2 :
+        TTYpe = [ 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD']
+    elif num == 3 :
+        TTYpe = ['RB' ,'RBR' , 'RBS']
+    elif num == 4:
+        TTYpe =  [ 'NN' ,'NNS' , 'NNP', 'NNPS']
+    elif num == 5:
+        TTYpe =  [ 'PRP' ,'PRP$']
+    elif num == 6 :
+        TTYpe =  [ 'PRP' ,'PRP$', 'JJ' ,'JJS','JJR', 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD','RB' ,'RBR' , 'RBS', 'NN' ,'NNS' , 'NNP', 'NNPS' , 'PRP' ,'PRP$']
+    
+        
+        
+        
+    
+    
+    Number = []
+    acc = []
+    #-------------- Clean-----------
+    TextCLean = textsTest.copy()
+    Seguences= tokenizer.texts_to_sequences(TextCLean)
+    Tesssst0 = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+    result = model.evaluate(Tesssst0, LAbelClean , verbose=0)
+    Number.append(0)
+    acc.append(result[1])
+    print(result[1])
+    i =0
+    temp =0
+    while i < 10 :
+        Number.append(i+1)
+        print ( Number[i+1])
+        for g , review in enumerate(TextCLean):
+            if len(doubleTestsortPost[g]) > i :
+                OldWord = str(doubleTestsortPost[g][i][0])
+                Type = doubleTestsortPost[g][i][3]
+                if num != 6:
+                    if  Type in TTYpe: 
+                        NewWord= transform(OldWord)
+                        TextCLean[g] = TextCLean[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                elif num == 6 :
+                    if  Type  not in TTYpe:
+                        NewWord= transform(OldWord)
+                        TextCLean[g] = TextCLean[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                
+        Seguences= tokenizer.texts_to_sequences(TextCLean)
+        Tesssst = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+        result = model.evaluate(Tesssst, LAbelClean , verbose=0)
+        acc.append(result[1])
+        print ('%.2f'%(result[1]*100))
+        i = i+1
+        print(" how many changes " , num , " == " ,temp)
+        temp =0
+    return Number , acc
+
+
+num =1
+LabelHigTransform = []
+AccuracyHighTransform= [] 
+while num <= 6 :
+    NumberAdjV1Transform , accAdjV1Transform = attackTenWordsAdjectiveHighV1Transformation(doubleTestsortPost ,tokenizer, textsTest, Test_labelsData0 , num )
+    prpoties = ""
+    if num == 1 :
+        prpoties = "Adjective"
+    elif num == 2 :
+        prpoties = "Verb"
+    elif num == 3 :
+        prpoties = "Adverb"
+    elif num == 4:
+        prpoties =  "Noun"
+    elif num == 5:
+        prpoties =  "Pronoun"
+    elif num == 6 :
+        prpoties =  "Other"
+    LabelHigTransform.append(NumberAdjV1Transform) 
+    AccuracyHighTransform.append(accAdjV1Transform)
+    num = num + 1
+    
+    
+
+
+# In[ ]:
+
+
+Title = "Differnt Transformations of High Score Words "
+LineChartTitleMultiV12(LabelHigTransform[0],AccuracyHighTransform[0],LabelHigTransform[1],AccuracyHighTransform[1], LabelHigTransform[2],AccuracyHighTransform[2],LabelHigTransform[3],AccuracyHighTransform[3],LabelHigTransform[4],AccuracyHighTransform[4], LabelHigTransform[5],AccuracyHighTransform[5],Title)
+
+
+def attackTenWordsAdjectiveLowV1Transformation(doubleTestsortPost ,tokenizer, textsTest, LAbelClean , num ):
+    
+    
+    TTYpe = []
+    if num == 1 :
+        TTYpe = [  'JJ' ,'JJS','JJR']
+    elif num == 2 :
+        TTYpe = [ 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD']
+    elif num == 3 :
+        TTYpe = ['RB' ,'RBR' , 'RBS']
+    elif num == 4:
+        TTYpe =  [ 'NN' ,'NNS' , 'NNP', 'NNPS']
+    elif num == 5:
+        TTYpe =  [ 'PRP' ,'PRP$']
+    elif num == 6 :
+        TTYpe =  [ 'PRP' ,'PRP$', 'JJ' ,'JJS','JJR', 'VB' , 'VBD' ,'VBG' , 'VBN', 'VBP','VBZ' , 'MD','RB' ,'RBR' , 'RBS', 'NN' ,'NNS' , 'NNP', 'NNPS' , 'PRP' ,'PRP$']
+    
+    Number = []
+    acc = []
+    #-------------- Clean-----------
+    TextCLean2 = textsTest.copy()
+    Seguences= tokenizer.texts_to_sequences(TextCLean2)
+    Tesssst0 = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+    result = model.evaluate(Tesssst0, LAbelClean , verbose=0)
+    Number.append(0)
+    acc.append(result[1])
+    print(result[1])
+    i =0
+    temp = 0
+    while i < 10 :
+        Number.append(i+1)
+        print ( Number[i+1])
+        for g , review in enumerate(TextCLean2):
+            #if g == 0 :
+            words = review.split()
+            words2 = nltk.pos_tag(words)
+            k = len(doubleTestsortPost[g])-1-i
+            if len(doubleTestsortPost[g]) > 20 :  #k
+                OldWord = str(doubleTestsortPost[g][k][0])
+                Type = doubleTestsortPost[g][k][3]
+                if num != 6:
+                    if  Type in TTYpe: 
+                        NewWord= transform(OldWord)
+                        TextCLean2[g] = TextCLean2[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                elif num == 6 :
+                    if  Type  not in TTYpe:
+                        NewWord= transform(OldWord)
+                        TextCLean2[g] = TextCLean2[g].replace(OldWord , NewWord)
+                        temp = temp + 1
+                
+ 
+        Seguences= tokenizer.texts_to_sequences(TextCLean2)
+        Tesssst = pad_sequences(Seguences, maxlen=MSEQUENCE_LENGTH)
+        result = model.evaluate(Tesssst, LAbelClean , verbose=0)
+        acc.append(result[1])
+        print ('%.2f'%(result[1]*100))
+        i = i+1
+        print(" how many changes " , num , " == " ,temp)
+        temp =0
+
+    return Number , acc
+
+
+num =1
+LabelLowTransform = []
+AccuracyLowTransform= [] 
+while num <= 6 :
+    NumberAdjV1TransformLow , accAdjV1TransformLow = attackTenWordsAdjectiveLowV1Transformation(doubleTestsortPost ,tokenizer, textsTest, Test_labelsData0 , num )
+    prpoties = ""
+    if num == 1 :
+        prpoties = "Adjective"
+    elif num == 2 :
+        prpoties = "Verb"
+    elif num == 3 :
+        prpoties = "Adverb"
+    elif num == 4:
+        prpoties =  "Noun"
+    elif num == 5:
+        prpoties =  "Pronoun"
+    elif num == 6 :
+        prpoties =  "Other"
+    LabelLowTransform.append(NumberAdjV1TransformLow) 
+    AccuracyLowTransform.append(accAdjV1TransformLow)
+    num = num + 1
+    
+    
+    
+Title = "Differnt transformations of low score words "
+LineChartTitleMultiV12(LabelLowTransform[0],AccuracyLowTransform[0],LabelLowTransform[1],AccuracyLowTransform[1], LabelLowTransform[2],AccuracyLowTransform[2],LabelLowTransform[3],AccuracyLowTransform[3],LabelLowTransform[4],AccuracyLowTransform[4], LabelLowTransform[5],AccuracyLowTransform[5],Title)
+ 
+    
+    
