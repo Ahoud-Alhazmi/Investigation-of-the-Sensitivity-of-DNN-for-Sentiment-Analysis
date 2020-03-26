@@ -28,5 +28,5 @@ Attack Model
 --------------------------------------------------------
 The model is (CNN-LSTM) that combines Convolutional Neural Network and Long Short-Term Memory [1] 
 
-[1] Jeffrey Donahue, Lisa Anne Hendricks, Sergio Guadar- rama, Marcus Rohrbach, Subhashini Venugopalan, Kate Saenko, and Trevor Darrell. 2015. Long-term recurrent convolutional networks for visual recogni- tion and description. In Proceedings of the IEEE conference on computer vision and pattern recogni- tion, pages 2625–2634. 
+[1] Jeffrey Donahue, Lisa Anne Hendricks, Sergio Guadarrama, Marcus Rohrbach, Subhashini Venugopalan, Kate Saenko, and Trevor Darrell. 2015. Long-term recurrent convolutional networks for visual recognition and description. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 2625–2634. 
 
