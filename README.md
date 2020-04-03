@@ -9,6 +9,7 @@ Datasets
 Download datasets from
 1.	IMDB : http://ai.stanford.edu/amaas/data/sentiment/
 2.	Yelp-Reviews: https://www.yelp.com/dataset/challenge
+3.  MR: http://www.cs.cornell.edu/people/pabo/movie-review-data/
 
 
 Setup
