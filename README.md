@@ -9,7 +9,6 @@ Datasets
 Download datasets from
 1.	IMDB : http://ai.stanford.edu/amaas/data/sentiment/
 2.	Yelp-Reviews: https://www.yelp.com/dataset/challenge
-3.  MR: http://www.cs.cornell.edu/people/pabo/movie-review-data/
 
 
 Setup
@@ -29,7 +28,7 @@ Attack Model
 --------------------------------------------------------
 The model is (CNN-LSTM) that combines Convolutional Neural Network and Long Short-Term Memory [1] 
 
-[1] J.  Wang,  L.-C.  Yu,  K.  R.  Lai,  and  X.  Zhang,  “Dimensional  SentimentAnalysis Using a Regional CNN-LSTM Model,” in Proceedings of the 54th  Annual  Meeting  of  the  Association  for  Computational  Linguistics(ACL), 2016, pp. 225–230
+[1] J.  Wang,  L.-C.  Yu,  K.  R.  Lai,  and  X.  Zhang,  “Dimensional  Sentiment Analysis Using a Regional CNN-LSTM Model,” in Proceedings of the 54th  Annual  Meeting  of  the  Association  for  Computational  Linguistics(ACL), 2016, pp. 225–230
 
 
 
