@@ -27,7 +27,11 @@ Strategies
 
 Attack Model
 --------------------------------------------------------
-The model is (CNN-LSTM) that combines Convolutional Neural Network and Long Short-Term Memory [1] 
+The first model is (CNN-LSTM) that combines Convolutional Neural Network and Long Short-Term Memory [1] 
 
-[1] Jeffrey Donahue, Lisa Anne Hendricks, Sergio Guadarrama, Marcus Rohrbach, Subhashini Venugopalan, Kate Saenko, and Trevor Darrell. 2015. Long-term recurrent convolutional networks for visual recognition and description. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 2625–2634. 
+[1] J.  Wang,  L.-C.  Yu,  K.  R.  Lai,  and  X.  Zhang,  “Dimensional  SentimentAnalysis Using a Regional CNN-LSTM Model,” in Proceedings of the 54th  Annual  Meeting  of  the  Association  for  Computational  Linguistics(ACL), 2016, pp. 225–230
+
+The Second model is Bidirectional LSTM [2]
+[2]   Lai,  L.  Xu,  K.  Liu,  and  J.  Zhao,  “Recurrent  Convolutional  NeuralNetworks  for  Text  Classification,”  in Proceedings  of  the  29th  National Conference of the American Association for Artificial Intelligence(AAAI), 2015, pp. 2267–2273
+
 
