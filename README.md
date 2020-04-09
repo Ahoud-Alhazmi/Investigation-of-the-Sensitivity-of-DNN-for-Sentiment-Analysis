@@ -32,7 +32,7 @@ The model is (CNN-LSTM) that combines Convolutional Neural Network and Long Shor
 
 
 
-For future analysis in other datasets and models:
+For Future Analysis
 --------------------------------------------------------
-You only need to download the new datasets and build a new model. Then, you can load the new model in analyzing files and read new datasets.
+For future analysis in other datasets and models: You only need to download the new datasets and build a new model. Then, you can load the new model in analyzing files and read new datasets.
 
